@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METASPLOIT_CONSOL v6.2</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #020202;
+            color: #00ff33;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            font-weight: bold;
+        }
+        #click-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .pulse-text {
+            font-size: 20px;
+            color: #ff3333;
+            text-shadow: 0 0 8px #ff3333;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+        #terminal {
+            width: 100vw;
+            height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .line {
+            margin-bottom: 6px;
+            white-space: pre-wrap;
+        }
+        .warning { color: #ff3333; text-shadow: 0 0 5px #ff3333; }
+        .success { color: #33ccff; text-shadow: 0 0 5px #33ccff; }
+        
+        /* Fake Glitch Overlay */
+        #freeze-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #ff3333;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .glitch-static {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="click-overlay" onclick="startPrank()">
+        <p class="pulse-text">[ RUN EXPLOIT.SH ]</p>
+    </div>
+
+    <!-- Simulation Screen -->
+    <div id="freeze-screen">
+        <div class="glitch-static"></div>
+        <h1 style="font-size: 3.5rem; letter-spacing: 3px;">⚠️ CRITICAL_OS_FREEZE</h1>
+        <p style="font-size: 16px; color: #fff; margin-top: 20px; max-width: 700px; padding: 15px; line-height: 1.5;">
+            HARDWARE CONTEXT_SWITCH_TIMEOUT DETECTED.<br>
+            Touch digitizer thread response: [0x0000004F - BLOCKED]<br>
+            All application UI layers have been force-halted by remote process.
+        </p>
+    </div>
+
+    <div id="terminal"></div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        let audioCtx;
+        let alarmInterval;
+
+        const logs = [
+            { text: "[*] Initializing staging architecture...", delay: 300, type: "default" },
+            { text: "[*] Mapping gateway routing loops...", delay: 400, type: "default" },
+            { text: "[SUCCESS] Security handshake bypassed via local exploit.", delay: 500, type: "success" },
+            { text: "[*] Locking interface driver thread locally...", delay: 600, type: "warning" },
+            { text: "[ALARM] TRIGGERING KERNEL DESTRUCTION OVERLAY...", delay: 600, type: "warning", triggerAlarm: true },
+            { text: "SHOW_FREEZE", delay: 0, type: "freeze" }
+        ];
+
+        function playHackingAlarm() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let toggle = true;
+            alarmInterval = setInterval(() => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(toggle ? 1000 : 400, audioCtx.currentTime); 
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+                toggle = !toggle;
+            }, 200);
+        }
+
+        function startPrank() {
+            document.getElementById('click-overlay').style.display = 'none';
+            
+            // Pro Feature: Auto Fullscreen request on click
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            }
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            processNextLog();
+        }
+
+        let currentLogIndex = 0;
+
+        function appendLine(text, type) {
+            const line = document.createElement('div');
+            line.className = `line ${type}`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+            return line;
+        }
+
+        function typeText(lineElement, text, index = 0) {
+            if (index < text.length) {
+                lineElement.innerHTML += text[index];
+                terminal.scrollTop = terminal.scrollHeight;
+                setTimeout(() => typeText(lineElement, text, index + 1), 12);
+            } else {
+                setTimeout(processNextLog, 300);
+            }
+        }
+
+        function processNextLog() {
+            if (currentLogIndex >= logs.length) return;
+
+            const currentLog = logs[currentLogIndex];
+            currentLogIndex++;
+
+            if (currentLog.triggerAlarm) {
+                playHackingAlarm();
+            }
+
+            if (currentLog.type === "freeze") {
+                setTimeout(() => {
+                    document.getElementById('freeze-screen').style.display = 'flex';
+                }, 400);
+            } else {
+                const line = appendLine("", currentLog.type);
+                typeText(line, currentLog.text);
+            }
+        }
+    </script>
+</body>
+</html>
